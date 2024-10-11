@@ -8,8 +8,6 @@ i2c-tools CHANGES
   i2cdetect: Display more functionality bits with option -F
   i2cdump: Remove support for SMBus block mode
   i2cget: Document SMBus block mode
-          Fix the return code of option -h
-  i2cset: Fix the return code of option -h
   i2ctransfer: Sort command line options and add to help text
                Add an option to print binary data
                Drop redundant variable arg_idx
