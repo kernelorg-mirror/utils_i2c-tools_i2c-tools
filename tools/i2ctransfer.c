@@ -149,8 +149,7 @@ int main(int argc, char *argv[])
 	enum parse_state state = PARSE_GET_DESC;
 	unsigned int buf_idx = 0;
 
-	for (i = 0; i < I2C_RDRW_IOCTL_MAX_MSGS; i++)
-		msgs[i].buf = NULL;
+	memset(msgs, 0, sizeof(msgs));
 
 	/* handle (optional) flags first */
 	while ((opt = getopt(argc, argv, "abfhvVy")) != -1) {
@@ -334,6 +333,7 @@ int main(int argc, char *argv[])
 		struct i2c_rdwr_ioctl_data rdwr;
 		unsigned int print_flags = PRINT_READ_BUF;
 
+		memset(&rdwr, 0, sizeof(rdwr));
 		rdwr.msgs = msgs;
 		rdwr.nmsgs = nmsgs;
 		nmsgs_sent = ioctl(file, I2C_RDWR, &rdwr);
