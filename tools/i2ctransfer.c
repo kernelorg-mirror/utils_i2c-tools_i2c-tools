@@ -364,7 +364,13 @@ int main(int argc, char *argv[])
  err_out:
 	close(file);
 
-	for (i = 0; i <= nmsgs; i++)
+	/*
+	 * If we were parsing data, the buffer for the last message was
+	 * already allocated and nmsgs still points to it.
+	 */
+	if (state == PARSE_GET_DATA)
+		free(msgs[nmsgs].buf);
+	for (i = 0; i < nmsgs; i++)
 		free(msgs[i].buf);
 
 	exit(1);
