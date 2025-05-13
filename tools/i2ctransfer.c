@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
 		__u8 data, *buf;
 		char *end;
 
-		if (nmsgs > I2C_RDRW_IOCTL_MAX_MSGS) {
+		if (nmsgs == I2C_RDRW_IOCTL_MAX_MSGS) {
 			fprintf(stderr, "Error: Too many messages (max: %d)\n",
 				I2C_RDRW_IOCTL_MAX_MSGS);
 			goto err_out;
