@@ -37,6 +37,7 @@ SOCFLAGS	:= -fpic -D_REENTRANT $(CFLAGS)
 BUILD_DYNAMIC_LIB ?= 1
 BUILD_STATIC_LIB ?= 1
 USE_STATIC_LIB ?= 0
+INSTALL_PERL_SCRIPTS ?= 1
 
 ifeq ($(USE_STATIC_LIB),1)
 BUILD_STATIC_LIB := 1
@@ -56,5 +57,8 @@ all:
 
 EXTRA	:=
 #EXTRA	+= eeprog py-smbus
-SRCDIRS	:= include lib eeprom stub tools $(EXTRA)
+SRCDIRS	:= include lib tools $(EXTRA)
+ifeq ($(INSTALL_PERL_SCRIPTS),1)
+SRCDIRS	+= eeprom stub
+endif
 include $(SRCDIRS:%=%/Module.mk)
