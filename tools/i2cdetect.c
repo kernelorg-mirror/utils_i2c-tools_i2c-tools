@@ -165,6 +165,14 @@ static const struct func all_func[] = {
 	{ .value = I2C_FUNC_SLAVE,
 	  .name = "Target mode" },
 #endif
+#if defined(I2C_FUNC_PROTOCOL_MANGLING)
+	{ .value = I2C_FUNC_PROTOCOL_MANGLING,
+	  .name = "Protocol mangling" },
+#endif
+#if defined(I2C_FUNC_NOSTART)
+	{ .value = I2C_FUNC_NOSTART,
+	  .name = "Repeated start skipping" },
+#endif
 	{ .value = 0, .name = "" }
 };
 
