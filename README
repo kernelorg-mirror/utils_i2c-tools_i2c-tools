@@ -9,7 +9,10 @@ applications. The tools and library compile, run and have been tested on
 GNU/Linux.
 
 The latest version of the code can be downloaded from:
-  https://i2c.wiki.kernel.org/index.php/I2C_Tools
+  https://www.kernel.org/pub/software/utils/i2c-tools/
+
+The main repository can be found here:
+  https://git.kernel.org/pub/scm/utils/i2c-tools/i2c-tools.git/
 
 
 CONTENTS
