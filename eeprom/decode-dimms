@@ -2703,8 +2703,8 @@ if (!$opt_igncheck) {
 
 
 if ($opt_html && !$opt_bodyonly) {
-	print "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.1//EN' \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">\n\n",
-	      "<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\">\n",
+	print "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.1//EN' \"https://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">\n\n",
+	      "<html xmlns=\"https://www.w3.org/1999/xhtml\" lang=\"en\">\n",
 	      "<head>\n",
 	      "\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\" />\n",
 	      "\t<title>PC DIMM Serial Presence Detect Tester/Decoder Output</title>\n",
