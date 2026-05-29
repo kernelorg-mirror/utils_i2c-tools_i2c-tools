@@ -10,7 +10,7 @@ setup(	name="smbus",
 	maintainer="Mark M. Hoffman",
 	maintainer_email="linux-i2c@vger.kernel.org",
 	license="GPLv2",
-	url="https://i2c.wiki.kernel.org/index.php/I2C_Tools",
+	url="https://git.kernel.org/pub/scm/utils/i2c-tools/i2c-tools.git/",
 	ext_modules=[Extension(
 		"smbus",
 		["smbusmodule.c"],
