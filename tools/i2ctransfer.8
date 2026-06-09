@@ -132,16 +132,16 @@ bytes which can be marked with the usual prefixes for hexadecimal, octal, etc.
 To make it easier to create larger data blocks easily, the data byte can have a suffix.
 
 .TP
-=
+.B =
 keep value constant until end of message (i.e. 0= means 0, 0, 0, ...)
 .TP
-+
+.B +
 increase value by 1 until end of message (i.e. 0+ means 0, 1, 2, ...)
 .TP
--
+.B -
 decrease value by 1 until end of message (i.e. 0xff- means 0xff, 0xfe, 0xfd, ...)
 .TP
-p
+.B p
 use value as seed for an 8 bit pseudo random sequence (i.e. 0p means 0x00, 0x50, 0xb0, ...)
 
 .SH "MESSAGE MODIFIER FLAGS"
