@@ -34,6 +34,14 @@ enum parse_state {
 	PARSE_GET_DATA,
 };
 
+enum supported_flags_retval {
+	FLAGS_GOT_RW,
+	FLAGS_GOT_OPTIONAL,
+	FLAGS_UNEXPECTED,
+	FLAGS_UNKNOWN,
+	FLAGS_UNSUPPORTED,
+};
+
 #define PRINT_STDERR	(1 << 0)
 #define PRINT_READ_BUF	(1 << 1)
 #define PRINT_WRITE_BUF	(1 << 2)
@@ -52,9 +60,16 @@ static void help(void)
 		"           -V version info\n"
 		"           -y yes to all confirmations\n"
 		"  I2CBUS is an integer or an I2C bus name\n"
-		"  DESC describes the transfer in the form: {r|w}LENGTH[@address]\n"
-		"    1) read/write-flag 2) LENGTH (range 0-65535, or '?')\n"
-		"    3) I2C address (use last one if omitted)\n"
+		"  DESC describes the transfer in the form: [inpst]{r|w}LENGTH[@address]\n"
+		"    1) optional message modifier flags, if supported\n"
+		"       i: ignore NACK from client\n"
+		"       n: no master ACK/NACK bit in a read message\n"
+		"       p: emit a STOP after the message\n"
+		"       s: skip repeated start\n"
+		"       t: toggle read/write bit\n"
+		"    2) mandatory read/write flag\n"
+		"    3) LENGTH (range 0-65535, or '?')\n"
+		"    4) I2C address (use last one if omitted)\n"
 		"  DATA are LENGTH bytes for a write message. They can be shortened by a suffix:\n"
 		"    = (keep value constant until LENGTH)\n"
 		"    + (increase value by 1 until LENGTH)\n"
@@ -66,17 +81,20 @@ static void help(void)
 		"  # i2ctransfer 0 w17@0x50 0x42 0xff-\n");
 }
 
-static int check_funcs(int file)
+static int get_funcs(int file, unsigned long *funcs)
 {
-	unsigned long funcs;
-
 	/* check adapter functionality */
-	if (ioctl(file, I2C_FUNCS, &funcs) < 0) {
+	if (ioctl(file, I2C_FUNCS, funcs) < 0) {
 		fprintf(stderr, "Error: Could not get the adapter "
 			"functionality matrix: %s\n", strerror(errno));
 		return -1;
 	}
 
+	return 0;
+}
+
+static int check_funcs(unsigned long funcs)
+{
 	if (!(funcs & I2C_FUNC_I2C)) {
 		fprintf(stderr, MISSING_FUNC_FMT, "I2C transfers");
 		return -1;
@@ -140,6 +158,103 @@ static int confirm(const char *filename, struct i2c_msg *msgs, __u32 nmsgs)
 	return 1;
 }
 
+/*
+ * Parse one message flag and check if the adapter supports it.
+ * Return:
+ * FLAGS_GOT_RW if we have the direction of the message (read or write)
+ * FLAGS_GOT_OPTIONAL if the argument is a valid and supported optional flag
+ * FLAGS_UNEXPECTED if the argument is the beginning of the size or address
+ * FLAGS_UNKNOWN for unknown flag
+ * FLAGS_UNSUPPORTED for flag unsupported by the adapter
+ */
+static enum supported_flags_retval
+	add_flag_if_supported(__u16 *flags, unsigned long funcs, char arg)
+{
+	int mangling = 0, nostart = 0;
+
+	/* Get the message flag from the argument */
+	switch (arg) {
+	/* mandatory direction flag: ends the parsing of flags */
+	case 'r':
+		*flags |= I2C_M_RD;
+		return FLAGS_GOT_RW;
+	case 'w':
+		return FLAGS_GOT_RW;
+
+	/* optional flags */
+#ifdef I2C_M_IGNORE_NAK
+	case 'i':
+		*flags |= I2C_M_IGNORE_NAK;
+		mangling = 1;
+		break;
+#endif
+#ifdef I2C_M_NO_RD_ACK
+	case 'n':
+		*flags |= I2C_M_NO_RD_ACK;
+		mangling = 1;
+		break;
+#endif
+#ifdef I2C_M_STOP
+	case 'p':
+		*flags |= I2C_M_STOP;
+		mangling = 1;
+		break;
+#endif
+#ifdef I2C_M_NOSTART
+	case 's':
+		*flags |= I2C_M_NOSTART;
+		nostart = 1;
+		break;
+#endif
+#ifdef I2C_M_REV_DIR_ADDR
+	case 't':
+		*flags |= I2C_M_REV_DIR_ADDR;
+		mangling = 1;
+		break;
+#endif
+
+	/* unexpected next part of the message: length or address */
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+	case '?':
+	case '@':
+		return FLAGS_UNEXPECTED;
+
+	default:
+		fprintf(stderr, "Error: Unknown flag '%c'\n", arg);
+		return FLAGS_UNKNOWN;
+	}
+
+	/* Check that the adapter supports the requested flags */
+#ifdef I2C_FUNC_PROTOCOL_MANGLING
+	if (funcs & I2C_FUNC_PROTOCOL_MANGLING)
+		mangling = 0;
+#endif
+	if (mangling) {
+		fprintf(stderr, MISSING_FUNC_FMT, "protocol mangling");
+		return FLAGS_UNSUPPORTED;
+	}
+
+#ifdef I2C_FUNC_NOSTART
+	if (funcs & I2C_FUNC_NOSTART)
+		nostart = 0;
+#endif
+	if (nostart) {
+		fprintf(stderr, MISSING_FUNC_FMT, "repeated start skipping");
+		return FLAGS_UNSUPPORTED;
+	}
+
+	return FLAGS_GOT_OPTIONAL;
+}
+
 int main(int argc, char *argv[])
 {
 	char filename[20];
@@ -148,6 +263,7 @@ int main(int argc, char *argv[])
 	struct i2c_msg msgs[I2C_RDRW_IOCTL_MAX_MSGS];
 	enum parse_state state = PARSE_GET_DESC;
 	unsigned int buf_idx = 0;
+	unsigned long funcs;
 
 	memset(msgs, 0, sizeof(msgs));
 
@@ -182,7 +298,7 @@ int main(int argc, char *argv[])
 		exit(1);
 
 	file = open_i2c_dev(i2cbus, filename, sizeof(filename), 0);
-	if (file < 0 || check_funcs(file))
+	if (file < 0 || get_funcs(file, &funcs) || check_funcs(funcs))
 		exit(1);
 
 	while (optind < argc) {
@@ -191,6 +307,7 @@ int main(int argc, char *argv[])
 		__u16 flags;
 		__u8 data, *buf;
 		char *end;
+		int ret;
 
 		if (nmsgs == I2C_RDRW_IOCTL_MAX_MSGS) {
 			fprintf(stderr, "Error: Too many messages (max: %d)\n",
@@ -202,11 +319,12 @@ int main(int argc, char *argv[])
 		case PARSE_GET_DESC:
 			flags = 0;
 
-			switch (*arg_ptr++) {
-			case 'r': flags |= I2C_M_RD; break;
-			case 'w': break;
-			default:
-				fprintf(stderr, "Error: Invalid direction\n");
+			for (ret = FLAGS_GOT_OPTIONAL; *arg_ptr && ret == FLAGS_GOT_OPTIONAL; arg_ptr++)
+				ret = add_flag_if_supported(&flags, funcs, *arg_ptr);
+			if (ret == FLAGS_UNKNOWN || ret == FLAGS_UNSUPPORTED)
+				goto err_out_with_arg;
+			if (ret != FLAGS_GOT_RW) {
+				fprintf(stderr, "Error: Missing direction flag 'r' or 'w'\n");
 				goto err_out_with_arg;
 			}
 

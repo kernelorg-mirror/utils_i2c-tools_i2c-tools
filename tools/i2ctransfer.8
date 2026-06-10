@@ -96,8 +96,11 @@ The number of blocks is limited by the Linux Kernel and defined by I2C_RDWR_IOCT
 .I desc
 blocks are composed like this:
 
-.I {r|w}<length_of_message>[@address]
+.I [inpst]{r|w}<length_of_message>[@address]
 
+.TP
+.B [inpst]
+If supported, specifies optional MESSAGE MODIFIER FLAGS. See the section below for details.
 .TP
 .B {r|w}
 specifies if the message is read or write
@@ -140,6 +143,29 @@ decrease value by 1 until end of message (i.e. 0xff- means 0xff, 0xfe, 0xfd, ...
 .TP
 p
 use value as seed for an 8 bit pseudo random sequence (i.e. 0p means 0x00, 0x50, 0xb0, ...)
+
+.SH "MESSAGE MODIFIER FLAGS"
+.PP
+These optional flags can be used to change the handling of a message when it is sent on the bus.
+They allow you to deviate from the I2C standard to work around device issues.
+They should be used with care, as they can confuse your I2C bus.
+Note that not all flags (or any) may be supported by your particular hardware and your kernel version.
+
+.TP
+.B i
+ignore NACK from client, treat them as ACK.
+.TP
+.B n
+in a read message, master ACK/NACK bit is skipped.
+.TP
+.B p
+emit a STOP after the message.
+.TP
+.B s
+skip repeated start.
+.TP
+.B t
+toggle read/write bit.
 
 .SH EXAMPLES
 .PP
