@@ -80,6 +80,9 @@ If you want to compile the tools against the static version of the library
 you can do:
   $ make USE_STATIC_LIB=1
 
+To compile for another platform, use the CROSS_COMPILE toolchain prefix option:
+  $ make CROSS_COMPILE=aarch64-linux-gnu-
+
 Optionally, you can run "make strip" prior to "make install" if you want
 smaller binaries. However, be aware that this will prevent any further
 attempt to debug the library and tools.

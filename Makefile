@@ -24,9 +24,11 @@ INSTALL_PROGRAM	:= $(INSTALL) -m 755
 LN		:= ln -sf
 RM		:= rm -f
 
-CC	?= gcc
-AR	?= ar
-STRIP	?= strip
+# Use CROSS_COMPILE to specify the toolchain prefix. E.g.
+# make CROSS_COMPILE=aarch64-linux-gnu-
+CC	= $(CROSS_COMPILE)gcc
+AR	= $(CROSS_COMPILE)ar
+STRIP	= $(CROSS_COMPILE)strip
 
 CFLAGS		?= -O2
 # When debugging, use the following instead
