@@ -123,6 +123,27 @@ static void print_msgs(struct i2c_msg *msgs, __u32 nmsgs, unsigned int flags)
 				fprintf(output, "%u", len);
 			else
 				fprintf(output, "TBD");
+
+#ifdef I2C_M_IGNORE_NAK
+			if (msgs[i].flags & I2C_M_IGNORE_NAK)
+				fprintf(output, ", ignore NACK");
+#endif
+#ifdef I2C_M_NO_RD_ACK
+			if (msgs[i].flags & I2C_M_NO_RD_ACK)
+				fprintf(output, ", no master ACK/NACK bit");
+#endif
+#ifdef I2C_M_STOP
+			if (msgs[i].flags & I2C_M_STOP)
+				fprintf(output, ", emit STOP");
+#endif
+#ifdef I2C_M_NOSTART
+			if (msgs[i].flags & I2C_M_NOSTART)
+				fprintf(output, ", skip repeated start");
+#endif
+#ifdef I2C_M_REV_DIR_ADDR
+			if (msgs[i].flags & I2C_M_REV_DIR_ADDR)
+				fprintf(output, ", toggle read/write bit");
+#endif
 		}
 
 		if (len && print_buf) {
