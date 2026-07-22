@@ -59,7 +59,7 @@ static void help(void)
 		"           -v verbose mode\n"
 		"           -V version info\n"
 		"           -y yes to all confirmations\n"
-		"  I2CBUS is an integer or an I2C bus name\n"
+		"  I2CBUS is an integer, I2C bus name, or I2C bus device path\n"
 		"  DESC describes the transfer in the form: [inpst]{r|w}LENGTH[@address]\n"
 		"    1) optional message modifier flags, if supported\n"
 		"       i: ignore NACK from client\n"

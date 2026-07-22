@@ -65,12 +65,12 @@ apply as those of option \fB-m\fR.
 .B -a
 Allow using addresses between 0x00 - 0x07 and 0x78 - 0x7f. Not recommended.
 .PP
-There are three required options to i2cset. \fIi2cbus\fR indicates the number
-or name of the I2C bus to be scanned.  This number should correspond to one of
-the busses listed by \fIi2cdetect -l\fR. \fIchip-address\fR specifies the
-address of the chip on that bus, and is an integer between 0x08 and 0x77.
-\fIdata-address\fR specifies the address on that chip to write to, and is an
-integer between 0x00 and 0xFF.
+There are three required options to i2cset. \fIi2cbus\fR indicates the number,
+name, or device file path of the I2C bus to be scanned. This number should
+correspond to one of the busses listed by \fIi2cdetect -l\fR. \fIchip-address\fR
+specifies the address of the chip on that bus, and is an integer between 0x08
+and 0x77. \fIdata-address\fR specifies the address on that chip to write to, and
+is an integer between 0x00 and 0xFF.
 .PP
 The \fIvalue\fR parameter, if specified, is the value to write to that
 location on the chip. If this parameter is omitted, then a short write is
