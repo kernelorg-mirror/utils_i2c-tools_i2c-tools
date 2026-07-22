@@ -213,8 +213,9 @@ static void print_i2c_busses(void)
 int main(int argc, char *argv[])
 {
 	char *end;
-	int i2cbus, file, res;
-	char filename[20];
+	int file, res;
+	char filename_buf[20];
+	char *filename = filename_buf;
 	unsigned long funcs;
 	int mode = MODE_AUTO;
 	int first = 0x08, last = 0x77;
@@ -277,11 +278,6 @@ int main(int argc, char *argv[])
 		help();
 		exit(1);
 	}
-	i2cbus = lookup_i2c_bus(argv[optind]);
-	if (i2cbus < 0) {
-		help();
-		exit(1);
-	}
 
 	/* read address range if present */
 	if (argc == optind + 3 && mode != MODE_FUNC) {
@@ -321,7 +317,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	file = open_i2c_dev(i2cbus, filename, sizeof(filename), 0);
+	file = open_i2c_dev(argv[optind], &filename, sizeof(filename_buf), 0);
 	if (file < 0) {
 		exit(1);
 	}

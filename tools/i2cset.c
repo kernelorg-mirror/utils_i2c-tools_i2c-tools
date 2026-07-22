@@ -151,9 +151,10 @@ int main(int argc, char *argv[])
 {
 	char *end;
 	const char *maskp = NULL;
-	int res, i2cbus, address, size, file;
+	int res, address, size, file;
 	int value, daddress, vmask = 0;
-	char filename[20];
+	char filename_buf[20];
+	char *filename = filename_buf;
 	int pec = 0;
 	int opt;
 	int force = 0, yes = 0, version = 0, readback = 0, all_addrs = 0;
@@ -181,10 +182,6 @@ int main(int argc, char *argv[])
 	}
 
 	if (argc < optind + 3)
-		help(1);
-
-	i2cbus = lookup_i2c_bus(argv[optind]);
-	if (i2cbus < 0)
 		help(1);
 
 	address = parse_i2c_address(argv[optind+1], all_addrs);
@@ -301,7 +298,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	file = open_i2c_dev(i2cbus, filename, sizeof(filename), 0);
+	file = open_i2c_dev(argv[optind], &filename, sizeof(filename_buf), 0);
 	if (file < 0
 	 || check_funcs(file, size, pec)
 	 || set_slave_addr(file, address, force))

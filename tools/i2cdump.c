@@ -100,9 +100,10 @@ static int check_funcs(int file, int size, int pec)
 int main(int argc, char *argv[])
 {
 	char *end;
-	int i, j, res, i2cbus, address, size, file;
+	int i, j, res, address, size, file;
 	int bank = 0, bankreg = 0x4E, old_bank = 0;
-	char filename[20];
+	char filename_buf[20];
+	char *filename = filename_buf;
 	int block[256];
 	int pec = 0, even = 0;
 	int opt;
@@ -132,11 +133,6 @@ int main(int argc, char *argv[])
 
 	if (argc < optind + 1) {
 		fprintf(stderr, "Error: No i2c-bus specified!\n");
-		help();
-		exit(1);
-	}
-	i2cbus = lookup_i2c_bus(argv[optind]);
-	if (i2cbus < 0) {
 		help();
 		exit(1);
 	}
@@ -235,7 +231,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	file = open_i2c_dev(i2cbus, filename, sizeof(filename), 0);
+	file = open_i2c_dev(argv[optind], &filename, sizeof(filename_buf), 0);
 	if (file < 0
 	 || check_funcs(file, size, pec)
 	 || set_slave_addr(file, address, force))

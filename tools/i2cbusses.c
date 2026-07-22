@@ -58,6 +58,42 @@ static struct adap_type adap_types[5] = {
 	  .algo		= "N/A", },
 };
 
+static int open_i2c_dev_by_nr(int i2cbus, char *filename, size_t size, int quiet)
+{
+	int file, len;
+
+	len = snprintf(filename, size, "/dev/i2c/%d", i2cbus);
+	if (len >= (int)size) {
+		fprintf(stderr, "%s: path truncated\n", filename);
+		return -EOVERFLOW;
+	}
+	file = open(filename, O_RDWR);
+
+	if (file < 0 && (errno == ENOENT || errno == ENOTDIR)) {
+		len = snprintf(filename, size, "/dev/i2c-%d", i2cbus);
+		if (len >= (int)size) {
+			fprintf(stderr, "%s: path truncated\n", filename);
+			return -EOVERFLOW;
+		}
+		file = open(filename, O_RDWR);
+	}
+
+	if (file < 0 && !quiet) {
+		if (errno == ENOENT) {
+			fprintf(stderr, "Error: Could not open file "
+				"`/dev/i2c-%d' or `/dev/i2c/%d': %s\n",
+				i2cbus, i2cbus, strerror(ENOENT));
+		} else {
+			fprintf(stderr, "Error: Could not open file "
+				"`%s': %s\n", filename, strerror(errno));
+			if (errno == EACCES)
+				fprintf(stderr, "Run as root?\n");
+		}
+	}
+
+	return file;
+}
+
 static enum adt i2c_get_funcs(int i2cbus)
 {
 	unsigned long funcs;
@@ -65,7 +101,7 @@ static enum adt i2c_get_funcs(int i2cbus)
 	char filename[20];
 	enum adt ret;
 
-	file = open_i2c_dev(i2cbus, filename, sizeof(filename), 1);
+	file = open_i2c_dev_by_nr(i2cbus, filename, sizeof(filename), 1);
 	if (file < 0)
 		return adt_unknown;
 
@@ -348,34 +384,8 @@ static int lookup_i2c_bus_by_name(const char *bus_name)
 		}
 	}
 
-	if (i2cbus == -1)
-		fprintf(stderr, "Error: I2C bus name doesn't match any "
-			"bus present!\n");
-
 done:
 	free_adapters(adapters);
-	return i2cbus;
-}
-
-/*
- * Parse an I2CBUS command line argument and return the corresponding
- * bus number, or a negative value if the bus is invalid.
- */
-int lookup_i2c_bus(const char *i2cbus_arg)
-{
-	unsigned long i2cbus;
-	char *end;
-
-	i2cbus = strtoul(i2cbus_arg, &end, 0);
-	if (*end || !*i2cbus_arg) {
-		/* Not a number, maybe a name? */
-		return lookup_i2c_bus_by_name(i2cbus_arg);
-	}
-	if (i2cbus > 0xFFFFF) {
-		fprintf(stderr, "Error: I2C bus out of range!\n");
-		return -2;
-	}
-
 	return i2cbus;
 }
 
@@ -410,38 +420,49 @@ int parse_i2c_address(const char *address_arg, int all_addrs)
 	return address;
 }
 
-int open_i2c_dev(int i2cbus, char *filename, size_t size, int quiet)
+/*
+ * Parse a I2CBUS command line argument and return the corresponding file
+ * descriptor, or a negative value if the file can't be resolved. Use *filename
+ * to return the file path. size refers to the size of the buffer which
+ * **filename initially points to.
+ *
+ * For historical reasons, I2CBUS parsing precedence is as follows:
+ * 	number -> name -> device path
+ */
+int open_i2c_dev(char *i2cbus_arg, char **filename, size_t size, int quiet)
 {
-	int file, len;
+	int file, i2cbus;
+	unsigned long i2cbus_ul;
+	char *end;
 
-	len = snprintf(filename, size, "/dev/i2c/%d", i2cbus);
-	if (len >= (int)size) {
-		fprintf(stderr, "%s: path truncated\n", filename);
-		return -EOVERFLOW;
-	}
-	file = open(filename, O_RDWR);
-
-	if (file < 0 && (errno == ENOENT || errno == ENOTDIR)) {
-		len = snprintf(filename, size, "/dev/i2c-%d", i2cbus);
-		if (len >= (int)size) {
-			fprintf(stderr, "%s: path truncated\n", filename);
-			return -EOVERFLOW;
+	i2cbus_ul = strtoul(i2cbus_arg, &end, 0);
+	if (!*end && *i2cbus_arg) {
+		if (i2cbus_ul > 0xFFFFF) {
+			fprintf(stderr, "Error: I2C bus out of range!\n");
+			return -2;
 		}
-		file = open(filename, O_RDWR);
+
+		return open_i2c_dev_by_nr(i2cbus_ul, *filename, size, quiet);
 	}
 
-	if (file < 0 && !quiet) {
-		if (errno == ENOENT) {
-			fprintf(stderr, "Error: Could not open file "
-				"`/dev/i2c-%d' or `/dev/i2c/%d': %s\n",
-				i2cbus, i2cbus, strerror(ENOENT));
-		} else {
-			fprintf(stderr, "Error: Could not open file "
-				"`%s': %s\n", filename, strerror(errno));
-			if (errno == EACCES)
-				fprintf(stderr, "Run as root?\n");
-		}
+	i2cbus = lookup_i2c_bus_by_name(i2cbus_arg);
+	if (i2cbus >= 0) {
+		return open_i2c_dev_by_nr(i2cbus, *filename, size, quiet);
 	}
+
+	*filename = i2cbus_arg;
+	file = open(i2cbus_arg, O_RDWR);
+
+	if (file >= 0 || quiet) return file;
+
+	if (errno == EACCES) {
+		fprintf(stderr, "Error: Could not open file `%s': %s\n"
+			"Run as root?\n", i2cbus_arg, strerror(errno));
+		return file;
+	}
+
+	fprintf(stderr, "Error: Couldn't interpret `%s' as a bus number, "
+		"name, or device file path!\n", i2cbus_arg);
 
 	return file;
 }

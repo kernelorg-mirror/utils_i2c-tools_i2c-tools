@@ -278,8 +278,9 @@ static enum supported_flags_retval
 
 int main(int argc, char *argv[])
 {
-	char filename[20];
-	int i2cbus, address = -1, file, opt, nmsgs = 0, nmsgs_sent, i;
+	char filename_buf[20];
+	char *filename = filename_buf;
+	int address = -1, file, opt, nmsgs = 0, nmsgs_sent, i;
 	int force = 0, yes = 0, version = 0, verbose = 0, all_addrs = 0, binary = 0;
 	struct i2c_msg msgs[I2C_RDRW_IOCTL_MAX_MSGS];
 	enum parse_state state = PARSE_GET_DESC;
@@ -314,11 +315,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	i2cbus = lookup_i2c_bus(argv[optind++]);
-	if (i2cbus < 0)
-		exit(1);
-
-	file = open_i2c_dev(i2cbus, filename, sizeof(filename), 0);
+	file = open_i2c_dev(argv[optind++], &filename, sizeof(filename_buf), 0);
 	if (file < 0 || get_funcs(file, &funcs) || check_funcs(funcs))
 		exit(1);
 
